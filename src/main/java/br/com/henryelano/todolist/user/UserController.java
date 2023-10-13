@@ -23,7 +23,7 @@ public class UserController {
         if(this.userExist(oUser)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Usuário Já existe!");
         }
-        return ResponseEntity.ok().body(this.userRepository.save(oUser));
+        return ResponseEntity.ok(this.userRepository.save(oUser));
     } 
 
     /**

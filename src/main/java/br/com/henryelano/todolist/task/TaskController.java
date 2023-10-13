@@ -26,25 +26,33 @@ public class TaskController {
 
     @PostMapping("/create")
     public ResponseEntity create(@RequestBody TaskModel oTask, HttpServletRequest request) {
-        oTask.setIdUser((UUID) request.getAttribute("idUser"));
+        oTask.setIdUser(this.getIdUserRequest(request));
         var sRetornoValidaData = this.validaData(oTask);
         if(!sRetornoValidaData.isEmpty()) {
             return ResponseEntity.badRequest().body(sRetornoValidaData);
         }
         var task = this.taskRepository.save(oTask);
-        return ResponseEntity.ok().body(task);
+        return ResponseEntity.ok(task);
     }
 
     @GetMapping("/")
     public List<TaskModel> list(HttpServletRequest request) {
-        return taskRepository.findByIdUser((UUID) request.getAttribute("idUser"));
+        return taskRepository.findByIdUser(this.getIdUserRequest(request));
     }
 
     @PutMapping("/update/{id}")
-    public TaskModel update(@RequestBody TaskModel oTask, HttpServletRequest request, @PathVariable UUID id) {
+    public ResponseEntity update(@RequestBody TaskModel oTask, HttpServletRequest request, @PathVariable UUID id) {
         var task = this.taskRepository.findById(id).orElse(null);
+
+        if(task == null) {
+            return ResponseEntity.badRequest().body("A tarefa pode ser encontrada!");
+        }
+
+        if(!task.getIdUser().equals(getIdUserRequest(request))) {
+            return ResponseEntity.badRequest().body("O usuário não tem permissão para alterar essa tarefa!");
+        }
         Utils.copyNonNullProperties(oTask, task);
-        return this.taskRepository.save(task);
+        return ResponseEntity.ok(this.taskRepository.save(task));
     }
     
     private String validaData(TaskModel oTask) {
@@ -57,6 +65,10 @@ public class TaskController {
             sMessage = "A data inicial deve ser maior que a data final";
         }
         return sMessage;
+    }
+
+    private UUID getIdUserRequest(HttpServletRequest request) {
+        return (UUID) request.getAttribute("idUser");
     }
 
 }
